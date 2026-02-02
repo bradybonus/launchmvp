@@ -1,0 +1,57 @@
+export type FeatureSize = "minor" | "medium" | "major";
+
+export type LaunchStatus = "draft" | "in_progress" | "ready" | "live";
+
+export type TaskStatus = "not_started" | "in_progress" | "done";
+
+export type ConnectedSystem = "Salesforce" | "Zendesk" | "Pendo" | "Help Center" | "Slack" | "None";
+
+export type PlanSectionKey = "messaging" | "enablement" | "customer_comms" | "internal_readiness";
+
+export interface Task {
+  id: string;
+  title: string;
+  owner: string;
+  status: TaskStatus;
+  connectedSystem: ConnectedSystem;
+}
+
+export interface PlanSection {
+  id: PlanSectionKey;
+  title: string;
+  tasks: Task[];
+}
+
+export interface LaunchPlan {
+  scopeSummary: string;
+  sections: PlanSection[];
+}
+
+export type AssetType = "release_notes" | "sales_email" | "in_app_copy";
+
+export interface Asset {
+  id: string;
+  type: AssetType;
+  title: string;
+  content: string;
+  status: "draft" | "published";
+}
+
+export interface Launch {
+  id: string;
+  name: string;
+  featureSize: FeatureSize;
+  targetAudience: string;
+  targetDate: string;
+  status: LaunchStatus;
+  createdDate: string;
+  plan: LaunchPlan;
+  assets: Asset[];
+}
+
+export interface CreateLaunchInput {
+  name: string;
+  featureSize: FeatureSize;
+  targetAudience: string;
+  targetDate: string;
+}
