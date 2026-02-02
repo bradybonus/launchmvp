@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Launch, FeatureSize } from "@/lib/types";
+import { countPlanProgress } from "@/lib/launch-plan";
 
 interface LaunchCardProps {
   launch: Launch;
@@ -33,20 +34,8 @@ function getStatusBadgeClass(status: Launch["status"]): string {
   }
 }
 
-function getProgress(launch: Launch): number {
-  let total = 0;
-  let done = 0;
-  for (const section of launch.plan.sections) {
-    for (const task of section.tasks) {
-      total++;
-      if (task.status === "done") done++;
-    }
-  }
-  return total === 0 ? 0 : Math.round((done / total) * 100);
-}
-
 export function LaunchCard({ launch }: LaunchCardProps) {
-  const progress = getProgress(launch);
+  const { pct: progress } = countPlanProgress(launch.plan);
   const sizeClass = getSizeBadgeClass(launch.featureSize);
   const statusClass = getStatusBadgeClass(launch.status);
 

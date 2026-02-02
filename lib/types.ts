@@ -8,18 +8,38 @@ export type ConnectedSystem = "Salesforce" | "Zendesk" | "Pendo" | "Help Center"
 
 export type PlanSectionKey = "messaging" | "enablement" | "customer_comms" | "internal_readiness";
 
-export interface Task {
+/** Single action item (no editable content). */
+export interface TaskGroupActionItem {
+  type: "task";
+  id: string;
+  title: string;
+  status: TaskStatus;
+}
+
+/** Editable content piece (e.g. Positioning, Value Prop, Key message). */
+export interface TaskGroupContentItem {
+  type: "content";
+  id: string;
+  title: string;
+  content: string;
+  status: TaskStatus;
+}
+
+export type TaskGroupItem = TaskGroupActionItem | TaskGroupContentItem;
+
+/** A launch-plan row: container for 1-to-many items (tasks or content). */
+export interface TaskGroup {
   id: string;
   title: string;
   owner: string;
-  status: TaskStatus;
   connectedSystem: ConnectedSystem;
+  items: TaskGroupItem[];
 }
 
 export interface PlanSection {
   id: PlanSectionKey;
   title: string;
-  tasks: Task[];
+  taskGroups: TaskGroup[];
 }
 
 export interface LaunchPlan {

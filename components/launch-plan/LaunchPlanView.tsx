@@ -1,13 +1,20 @@
 "use client";
 
-import type { Launch, Task, TaskStatus, PlanSection } from "@/lib/types";
+import Link from "next/link";
+import type {
+  Launch,
+  PlanSection,
+  TaskGroup,
+  TaskGroupItem,
+  TaskStatus,
+} from "@/lib/types";
 
 interface LaunchPlanViewProps {
   launch: Launch;
-  onTaskStatusChange?: (taskId: string, status: TaskStatus) => void;
+  onItemStatusChange?: (groupId: string, itemId: string, status: TaskStatus) => void;
 }
 
-function getStatusLabel(status: Task["status"]): string {
+function getStatusLabel(status: TaskStatus): string {
   switch (status) {
     case "not_started":
       return "Not started";
@@ -37,22 +44,31 @@ function getConnectedSystemBadgeClass(system: string): string {
   }
 }
 
-function TaskRow({
-  task,
+function GroupItemRow({
+  launchId,
+  groupId,
+  item,
+  groupOwner,
+  groupConnectedSystem,
   onStatusChange,
 }: {
-  task: Task;
-  onStatusChange?: (taskId: string, status: TaskStatus) => void;
+  launchId: string;
+  groupId: string;
+  item: TaskGroupItem;
+  groupOwner: string;
+  groupConnectedSystem: string;
+  onStatusChange?: (groupId: string, itemId: string, status: TaskStatus) => void;
 }) {
-  const isDone = task.status === "done";
+  const isDone = item.status === "done";
   const nextStatus: TaskStatus = isDone ? "not_started" : "done";
+  const isContent = item.type === "content";
 
   return (
-    <div className="group flex items-start gap-4 rounded-lg border border-gray-200 bg-white px-4 py-3 hover:border-gray-300 transition-colors">
+    <div className="flex items-start gap-3 rounded-md border border-gray-100 bg-white px-3 py-2.5 hover:border-gray-200 transition-colors">
       <div className="flex shrink-0 items-center pt-0.5">
         <button
           type="button"
-          onClick={() => onStatusChange?.(task.id, nextStatus)}
+          onClick={() => onStatusChange?.(groupId, item.id, nextStatus)}
           className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 hover:border-gray-400"
           aria-label={isDone ? "Mark not started" : "Mark done"}
         >
@@ -68,41 +84,68 @@ function TaskRow({
         </button>
       </div>
       <div className="min-w-0 flex-1">
-        <p className={`font-medium text-gray-900 ${isDone ? "line-through text-gray-500" : ""}`}>
-          {task.title}
+        <p className={`text-sm font-medium text-gray-900 ${isDone ? "line-through text-gray-500" : ""}`}>
+          {item.title}
         </p>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span className="text-sm text-gray-500">{task.owner}</span>
-          {task.connectedSystem !== "None" && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          {isContent && (
+            <>
+              <Link
+                href={`/launch/${launchId}/task/${item.id}`}
+                className="text-sm font-medium text-blue-600 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
+              >
+                Preview content
+              </Link>
+              <span className="text-gray-400">·</span>
+            </>
+          )}
+          <span className="text-xs text-gray-500">{groupOwner}</span>
+          {groupConnectedSystem !== "None" && (
             <span
-              className={`rounded border px-2 py-0.5 text-xs font-medium ${getConnectedSystemBadgeClass(task.connectedSystem)}`}
+              className={`rounded border px-2 py-0.5 text-xs font-medium ${getConnectedSystemBadgeClass(groupConnectedSystem)}`}
             >
-              {task.connectedSystem}
+              {groupConnectedSystem}
             </span>
           )}
-          <span className="text-xs text-gray-400">{getStatusLabel(task.status)}</span>
+          <span className="text-xs text-gray-400">{getStatusLabel(item.status)}</span>
         </div>
       </div>
     </div>
   );
 }
 
-function SectionBlock({
-  section,
-  onTaskStatusChange,
+function TaskGroupBlock({
+  launchId,
+  group,
+  onItemStatusChange,
 }: {
-  section: PlanSection;
-  onTaskStatusChange?: (taskId: string, status: TaskStatus) => void;
+  launchId: string;
+  group: TaskGroup;
+  onItemStatusChange?: (groupId: string, itemId: string, status: TaskStatus) => void;
 }) {
   return (
-    <div className="mb-8">
-      <h3 className="mb-3 text-lg font-semibold text-gray-900">{section.title}</h3>
-      <div className="space-y-2">
-        {section.tasks.map((task) => (
-          <TaskRow
-            key={task.id}
-            task={task}
-            onStatusChange={onTaskStatusChange}
+    <div className="mb-6 last:mb-0">
+      <div className="mb-2 flex items-center gap-2">
+        <h4 className="text-base font-semibold text-gray-900">{group.title}</h4>
+        <span className="text-sm text-gray-500">{group.owner}</span>
+        {group.connectedSystem !== "None" && (
+          <span
+            className={`rounded border px-2 py-0.5 text-xs font-medium ${getConnectedSystemBadgeClass(group.connectedSystem)}`}
+          >
+            {group.connectedSystem}
+          </span>
+        )}
+      </div>
+      <div className="space-y-1.5 pl-1">
+        {group.items.map((item) => (
+          <GroupItemRow
+            key={item.id}
+            launchId={launchId}
+            groupId={group.id}
+            item={item}
+            groupOwner={group.owner}
+            groupConnectedSystem={group.connectedSystem}
+            onStatusChange={onItemStatusChange}
           />
         ))}
       </div>
@@ -110,14 +153,45 @@ function SectionBlock({
   );
 }
 
-export function LaunchPlanView({ launch, onTaskStatusChange }: LaunchPlanViewProps) {
+function SectionBlock({
+  launchId,
+  section,
+  onItemStatusChange,
+}: {
+  launchId: string;
+  section: PlanSection;
+  onItemStatusChange?: (groupId: string, itemId: string, status: TaskStatus) => void;
+}) {
+  return (
+    <div className="mb-8">
+      <h3 className="mb-4 text-lg font-semibold text-gray-900">{section.title}</h3>
+      <div className="space-y-4">
+        {section.taskGroups.map((group) => (
+          <div
+            key={group.id}
+            className="rounded-lg border border-gray-200 bg-gray-50/50 p-4"
+          >
+            <TaskGroupBlock
+              launchId={launchId}
+              group={group}
+              onItemStatusChange={onItemStatusChange}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function LaunchPlanView({ launch, onItemStatusChange }: LaunchPlanViewProps) {
   return (
     <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-6">
       {launch.plan.sections.map((section) => (
         <SectionBlock
           key={section.id}
+          launchId={launch.id}
           section={section}
-          onTaskStatusChange={onTaskStatusChange}
+          onItemStatusChange={onItemStatusChange}
         />
       ))}
     </div>

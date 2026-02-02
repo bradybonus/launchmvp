@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useLaunch } from "@/lib/context/LaunchContext";
+import { countPlanProgress } from "@/lib/launch-plan";
+import { AppHeader } from "@/components/shared/AppHeader";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 export default function ReadyToLaunchPage() {
   const params = useParams();
@@ -30,65 +33,67 @@ export default function ReadyToLaunchPage() {
   }
 
   if (confirmed) {
+    const confirmedBreadcrumb = [
+      { label: "Dashboard", href: "/" },
+      { label: launch.name, href: `/launch/${launch.id}` },
+      { label: "Launch activated" },
+    ];
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
-        <div className="rounded-lg border border-gray-200 bg-white p-8 shadow-sm text-center max-w-md w-full">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-            <svg
-              className="h-6 w-6 text-green-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+      <div className="min-h-screen bg-gray-50">
+        <AppHeader />
+        <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+          <Breadcrumb items={confirmedBreadcrumb} />
+        <div className="flex flex-col items-center justify-center px-4 py-12">
+          <div className="rounded-lg border border-gray-200 bg-white p-8 shadow-sm text-center max-w-md w-full">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+              <svg
+                className="h-6 w-6 text-green-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <h2 className="mt-4 text-xl font-semibold text-gray-900">
+              Launch activated
+            </h2>
+            <p className="mt-2 text-gray-600">
+              All teams have been notified. {launch.name} is now live.
+            </p>
+            <Link
+              href="/"
+              className="mt-6 inline-block rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-          <h2 className="mt-4 text-xl font-semibold text-gray-900">
-            Launch activated
-          </h2>
-          <p className="mt-2 text-gray-600">
-            All teams have been notified. {launch.name} is now live.
-          </p>
-          <Link
-            href="/"
-            className="mt-6 inline-block rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            Return to dashboard
+              Return to dashboard
           </Link>
         </div>
+        </div>
+        </main>
       </div>
     );
   }
 
-  let total = 0;
-  let done = 0;
-  for (const section of launch.plan.sections) {
-    for (const task of section.tasks) {
-      total++;
-      if (task.status === "done") done++;
-    }
-  }
-  const allComplete = total > 0 && done === total;
+  const breadcrumb = [
+    { label: "Dashboard", href: "/" },
+    { label: launch.name, href: `/launch/${launch.id}` },
+    { label: "Ready to launch" },
+  ];
+
+  const progress = countPlanProgress(launch.plan);
+  const allComplete = progress.total > 0 && progress.done === progress.total;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="text-xl font-semibold text-gray-900">
-            Launch
-          </Link>
-          <Link href={`/launch/${launch.id}`} className="text-sm text-gray-600 hover:text-gray-900">
-            Back to launch plan
-          </Link>
-        </div>
-      </header>
+      <AppHeader />
       <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-        <h1 className="text-2xl font-bold text-gray-900">Ready to Launch</h1>
+        <Breadcrumb items={breadcrumb} />
+        <h1 className="mt-3 text-2xl font-bold text-gray-900">Ready to Launch</h1>
         <p className="mt-1 text-gray-600">
           Final review for {launch.name}. Confirm when you’re ready to go live.
         </p>
@@ -112,7 +117,7 @@ export default function ReadyToLaunchPage() {
             <div>
               <p className="font-medium text-gray-900">All sections complete</p>
               <p className="text-sm text-gray-500">
-                {done} of {total} tasks done. Launch plan is ready.
+                {progress.done} of {progress.total} items done. Launch plan is ready.
               </p>
             </div>
           </div>

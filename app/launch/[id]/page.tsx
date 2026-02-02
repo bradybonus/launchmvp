@@ -3,6 +3,9 @@
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLaunch } from "@/lib/context/LaunchContext";
+import { countPlanProgress } from "@/lib/launch-plan";
+import { AppHeader } from "@/components/shared/AppHeader";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { LaunchPlanView } from "@/components/launch-plan/LaunchPlanView";
 import { LaunchPlanHeader } from "@/components/launch-plan/LaunchPlanHeader";
 
@@ -10,7 +13,7 @@ export default function LaunchPlanPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const { getLaunchById, updateTaskStatus, markLaunchReady } = useLaunch();
+  const { getLaunchById, updateItemStatus, markLaunchReady } = useLaunch();
   const launch = getLaunchById(id);
 
   if (!launch) {
@@ -24,35 +27,21 @@ export default function LaunchPlanPage() {
     );
   }
 
-  let total = 0;
-  let done = 0;
-  for (const section of launch.plan.sections) {
-    for (const task of section.tasks) {
-      total++;
-      if (task.status === "done") done++;
-    }
-  }
-  const progress = {
-    done,
-    total,
-    pct: total === 0 ? 0 : Math.round((done / total) * 100),
-  };
+  const progress = countPlanProgress(launch.plan);
   const allComplete = progress.total > 0 && progress.done === progress.total;
   const canMarkReady = allComplete && launch.status === "in_progress";
 
+  const breadcrumb = [
+    { label: "Dashboard", href: "/" },
+    { label: launch.name },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="text-xl font-semibold text-gray-900">
-            Launch
-          </Link>
-          <Link href="/" className="text-sm text-gray-600 hover:text-gray-900">
-            Dashboard
-          </Link>
-        </div>
-      </header>
+      <AppHeader />
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+        <Breadcrumb items={breadcrumb} />
+        <div className="mt-3">
         <LaunchPlanHeader
           launch={launch}
           progress={progress}
@@ -64,10 +53,11 @@ export default function LaunchPlanPage() {
         />
         <LaunchPlanView
           launch={launch}
-          onTaskStatusChange={(taskId, status) =>
-            updateTaskStatus(launch.id, taskId, status)
+          onItemStatusChange={(groupId, itemId, status) =>
+            updateItemStatus(launch.id, groupId, itemId, status)
           }
         />
+        </div>
       </main>
     </div>
   );

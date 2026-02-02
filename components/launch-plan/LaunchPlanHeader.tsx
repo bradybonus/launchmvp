@@ -66,7 +66,7 @@ export function LaunchPlanHeader({
       <div className="mt-6">
         <div className="flex items-center justify-between text-sm">
           <span className="font-medium text-gray-700">
-            {progress.done} of {progress.total} tasks complete
+            {progress.done} of {progress.total} items complete
           </span>
           <span className="text-gray-500">{progress.pct}%</span>
         </div>
